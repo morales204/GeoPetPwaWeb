@@ -1,41 +1,33 @@
 {
-  "phases": {
-    "setup": {
-      "packages": {
-        "php": "8.2",
-        "node": "22"
+  "build": {
+    "steps": [
+      {
+        "name": "Install PHP extensions",
+        "run": "install-php-extensions ctype curl dom fileinfo filter hash mbstring openssl pcre pdo session tokenizer xml grpc"
+      },
+      {
+        "name": "Composer install",
+        "run": "composer install --optimize-autoloader --no-scripts --no-interaction"
+      },
+      {
+        "name": "Install Node modules",
+        "run": "npm ci"
+      },
+      {
+        "name": "Prune dev modules",
+        "run": "npm prune --omit=dev --ignore-scripts"
+      },
+      {
+        "name": "Build assets",
+        "run": "npm run build"
+      },
+      {
+        "name": "Laravel cache optimizations",
+        "run": "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache"
       }
-    },
-    "prepare": {
-      "cmds": [
-        "mkdir -p /usr/local/etc/php/conf.d",
-        "mkdir -p /conf.d/"
-      ]
-    },
-    "install": {
-      "cmds": [
-        "install-php-extensions ctype curl dom fileinfo filter hash mbstring openssl pcre pdo session tokenizer xml grpc",
-        "composer install --optimize-autoloader --no-scripts --no-interaction",
-        "npm ci",
-        "npm prune --omit=dev --ignore-scripts"
-      ]
-    },
-    "build": {
-      "cmds": [
-        "npm run build",
-        "php artisan config:cache",
-        "php artisan route:cache",
-        "php artisan view:cache",
-        "php artisan event:cache"
-      ]
-    },
-    "deploy": {
-      "cmds": [
-        "/start-container.sh"
-      ]
-    }
+    ]
+  },
+  "deploy": {
+    "run": "/start-container.sh"
   }
 }
-
-
-
