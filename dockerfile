@@ -1,22 +1,44 @@
-FROM dunglas/frankenphp:php8.2
+# ----------------------------
+# Imagen base con PHP + Caddy
+# ----------------------------
+FROM dunglas/frankenphp:php8.2.29-bookworm AS base
 
-# Instalar extensiones necesarias incluyendo GRPC
-RUN install-php-extensions \
-    ctype curl dom fileinfo filter hash mbstring openssl pcre pdo session tokenizer xml grpc
+# -----------------------------------
+# Instalar dependencias necesarias
+# -----------------------------------
+RUN apt-get update && apt-get install -y \
+    git zip unzip curl pkg-config libssl-dev autoconf build-essential \
+    && pecl install grpc \
+    && docker-php-ext-enable grpc
 
-# Copiar archivos del proyecto
-COPY . /app/
+# -----------------------------------
+# Instalar Composer
+# -----------------------------------
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+# -----------------------------------
+# Establecer directorio del proyecto
+# -----------------------------------
+WORKDIR /var/www/html
 
-# Instalar dependencias backend y frontend
-RUN composer install --optimize-autoloader --no-dev --no-interaction
-RUN npm ci && npm run build
+# Copiar archivos
+COPY . .
 
-# Optimizar Laravel
+# -----------------------------------
+# Instalar dependencias PHP y JS
+# -----------------------------------
+RUN composer install --optimize-autoloader --no-dev \
+    && npm install \
+    && npm run build
+
+# -----------------------------------
+# Cache Laravel
+# -----------------------------------
 RUN php artisan config:cache && \
     php artisan route:cache && \
     php artisan view:cache && \
     php artisan event:cache
 
-CMD ["/start-container.sh"]
+EXPOSE 8000
+
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
