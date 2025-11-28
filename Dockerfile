@@ -6,10 +6,13 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Instala gRPC PHP sin compilar la extensión nativa
 RUN composer require grpc/grpc google/protobuf
 
 WORKDIR /var/www/html
+
+# 📌 << ESTA LÍNEA FALTABA >>
+COPY . .
+
 EXPOSE 9000
 CMD ["php-fpm"]
 
