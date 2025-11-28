@@ -1,0 +1,2 @@
+[build]
+buildCommand = "composer install --ignore-platform-req=ext-grpc --optimize-autoloader --no-scripts --no-interaction"
