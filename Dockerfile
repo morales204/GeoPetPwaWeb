@@ -1,26 +1,27 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm AS base
 
-# Dependencias del sistema
+# Instalar dependencias necesarias
 RUN apt-get update && apt-get install -y \
     git unzip libz-dev libssl-dev libcurl4-openssl-dev pkg-config \
-    libprotobuf-dev protobuf-compiler && \
-    rm -rf /var/lib/apt/lists/*
+    libprotobuf-dev protobuf-compiler g++ autoconf make \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instala Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Copiar composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Instala GRPC versión compatible con PHP 8.2
-RUN pecl install grpc-1.57.0 \
+# ⚠️ Instalar versión estable compatible con PHP 8.3
+RUN pecl install grpc-1.56.3 \
     && echo "extension=grpc.so" > /usr/local/etc/php/conf.d/grpc.ini
 
-# Copia proyecto Laravel
+# Opcional: instalar protobuf PHP
+RUN pecl install protobuf \
+    && echo "extension=protobuf.so" > /usr/local/etc/php/conf.d/protobuf.ini
+
 WORKDIR /var/www/html
-COPY . .
 
-# Instala dependencias backend
-RUN composer install --no-dev --optimize-autoloader
-
-# Exponer puerto
-EXPOSE 9000
+# Instala dependencias de tu proyecto
+# COPY composer.json composer.lock ./
+# RUN composer install --no-dev --prefer-dist --optimize-autoloader
 
 CMD ["php-fpm"]
+EXPOSE 9000
