@@ -1,24 +1,31 @@
 FROM php:8.3-fpm
 
+# 1. Dependencias necesarias para compilar GRPC
 RUN apt-get update && apt-get install -y \
-    git unzip curl pkg-config protobuf-compiler libzip-dev zip build-essential autoconf \
+    git unzip curl pkg-config protobuf-compiler \
+    libssl-dev zlib1g-dev g++ autoconf make libtool \
     && rm -rf /var/lib/apt/lists/*
 
+# 2. Instalar composer dentro del contenedor
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# ================================
-# 📌 Instalar extensión GRPC requerida por Firestore
-# ================================
-RUN pecl install grpc \
+# 3. Instalar GRPC PHP (versión estable para Firestore)
+RUN pecl install grpc-1.51.3 \
     && echo "extension=grpc.so" > /usr/local/etc/php/conf.d/grpc.ini
 
-# Librerías PHP que querías mantener
-RUN composer global require grpc/grpc google/protobuf
-
+# 4. Preparar proyecto
 WORKDIR /var/www/html
 COPY . .
 
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# 5. Instalar dependencias del proyecto
+RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
+
+# 6. Optimizar Laravel
+RUN php artisan key:generate && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
 
 EXPOSE 9000
-CMD ["php-fpm"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"]
+
