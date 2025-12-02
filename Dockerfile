@@ -20,12 +20,6 @@ COPY . .
 # 5. Instalar dependencias del proyecto
 RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
 
-# 6. Optimizar Laravel
-RUN php artisan key:generate && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
-
 EXPOSE 9000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"]
 
